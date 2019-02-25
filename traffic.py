@@ -31,7 +31,7 @@ gamma = 0.9
 training = False
 pretrain_length = batch_size
 target_network_update = 150
-agent_network_update = 1500 
+agent_network_update = 1500
 
 class Simulation:
     def __init__():
@@ -41,7 +41,7 @@ class Simulation:
     def take_action(self, action):
         self.reward = 
 
-    def is_finished(self):
+    # def is_finished(self):
 
 
 # initialize simualtion 
@@ -247,7 +247,7 @@ with tf.Session() as sess:
 	    	episode_rewards = []
 
 		    # Make a new episode and observe the first state
-		    simulation.new_episode()
+		    # simulation.new_episode()
 		    state = simulation.get_state()
 
 		    while step < max_steps: #450
