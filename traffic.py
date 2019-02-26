@@ -49,9 +49,11 @@ agent_network_update = 1500
 
 class Simulation:
 	# Start the simulation
-	def __init__():
+	def __init__(self):
 		traci.start(sumoCmd)
-		self.step = 0
+
+	def __del__(self):
+		traci.close()
 
 	# Get the state w.r.t. a junction. The parameter junction is a string indicating the junction index.
 	# The left junction is 'j1' and right junction is 'j2'	
@@ -418,33 +420,3 @@ with tf.Session() as sess:
 
 
 		save_path = saver.save(sess, "./models/model_"+j+".ckpt")
-
-
-
- 
-
-
-
-# def getMatrix(inter):
-
-
-# while traci.vehicle.getIDCount() == 0:
-#   traci.simulationStep()
-#   step += 1
-# print('step:',step)
-# matrix = getMatrix('j1')
-# traci.simulationStep()  
-# step += 1
-
-# print(matrix)
-
-# print('step:',step)
-# matrix = getMatrix('j2')
-# traci.simulationStep()  
-# step += 1
-
-# traci.close()
-# print(matrix)
-# traci.start(sumoCmd)
-# print(traci.trafficlight.getRedYellowGreenState('j1'))
-# traci.close()
