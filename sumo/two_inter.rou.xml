@@ -1,0 +1,45 @@
+<routes>
+	<vType accel="1.0" decel="5.0" id="Car" length="2.0" maxSpeed="100.0" sigma="0.0" />
+
+	<route id="r1" edges="lin j12 rout" />
+	<vehicle depart="0" id="v1" route="r1" type="Car" />
+
+	<route id="r2" edges="llin j12 lrout" />
+	<vehicle depart="0" id="v2" route="r2" type="Car" />
+
+	<route id="r3" edges="lin j12 urout" />
+	<vehicle depart="0" id="v3" route="r3" type="Car" />
+
+	<route id="r4" edges="lin llout" />
+	<vehicle depart="0" id="v4" route="r4" type="Car" />
+
+	<route id="r5" edges="ulin j12 rout" />
+	<vehicle depart="0" id="v5" route="r5" type="Car" />
+
+	<route id="r6" edges="rin j21 ulout" />
+	<vehicle depart="0" id="v6" route="r6" type="Car" />
+
+	<route id="r7" edges="rin urout" />
+	<vehicle depart="0" id="v7" route="r7" type="Car" />
+
+	<route id="r8" edges="urin j21 ulout" />
+	<vehicle depart="0" id="v8" route="r8" type="Car" />
+
+	<route id="r9" edges="urin j21 lout" />
+	<vehicle depart="0" id="v9" route="r9" type="Car" />
+
+	<route id="r10" edges="lrin j21 llout" />
+	<vehicle depart="0" id="v10" route="r10" type="Car" />
+
+	<route id="r11" edges="llin ulout" />
+	<vehicle depart="0" id="v11" route="r11" type="Car" />
+
+	<route id="r12" edges="ulin j12 rout" />
+	<vehicle depart="0" id="v12" route="r12" type="Car" />
+
+	<vehicle depart="15" id="v16" route="r12" type="Car" />
+	<vehicle depart="20" id="v14" route="r6" type="Car" />
+	<vehicle depart="35" id="v15" route="r3" type="Car" />
+	<vehicle depart="40" id="v13" route="r1" type="Car" />
+
+</routes>

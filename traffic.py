@@ -6,7 +6,8 @@ import numpy as np
 # global constants
 grid_rows= 10
 grid_cols = 10
-action_size=4
+action_size = 4
+agent_size = 2
 
 # creating our environment
 states = np.zeros((4, grid_rows, grid_cols))
@@ -256,9 +257,9 @@ with tf.Session() as sess:
 		        # Increase decay_step
 		        decay_step +=1
 
-		        action = np.zeros((4,4))
+		        action = np.zeros((agent_size,action_size))
 
-		        for i in range(4):
+		        for i in range(agent_size):
 		            saver.restore(sess,"./models/model_"+i+".ckpt")
 		        # Predict the action to take and take it
 		            action[i], explore_probability = predict_action(explore_start, explore_stop, decay_rate, decay_step, state, actions)
@@ -315,3 +316,112 @@ with tf.Session() as sess:
 		save_path = saver.save(sess, "./models/model_"+j+".ckpt")
 
 
+# import os, sys
+# from time import sleep
+# tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
+# sys.path.append(tools)
+
+# sumoBinary = "/usr/bin/sumo"
+# sumoCmd = [sumoBinary, "-c", "two_inter.sumocfg"]
+
+# import traci
+# import traci.constants as tc
+# import numpy as np
+# traci.start(sumoCmd)
+# step = 0
+
+# def simpleXY(p):
+#   x,y = p
+#   if x > 13.5:
+#     x -= 0.5
+#   if x > 18:
+#     x -= 0.5
+#   if x > 31.5:
+#     x -= 0.5
+#   if x > 36:
+#     x -= 0.5
+#   if y > 22.5:
+#     y -= 0.5
+#   if y > 27:
+#     y -= 0.5
+#   X = int(x/4.5)
+#   Y = int(y/4.5)
+
+#   return X,Y    
+
+
+# def getMatrix(inter):
+#   matrix = np.zeros([10,10,4])  
+#   j1Inter = traci.trafficlight.getRedYellowGreenState('j1').lower()
+#   j2Inter = traci.trafficlight.getRedYellowGreenState('j2').lower()
+#   if inter == 'j1':
+#     i = 2
+#     j = 3
+#   else:
+#     i = 3
+#     j = 2 
+  
+#   num = int(len(j2Inter)/4)
+#   if j2Inter[0] == 'r':
+#     matrix[:4,6,i] = 4
+#   if j2Inter[0] == 'g':
+#     matrix[:4,6,i] = 2
+#   if j2Inter[num] == 'r':
+#     matrix[4,8:,i] = 4
+#   if j2Inter[num] == 'g':
+#     matrix[4,8:,i] = 2
+#   if j2Inter[num*2] == 'r':
+#     matrix[6:,7,i] = 4
+#   if j2Inter[num*2] == 'g':
+#     matrix[6:,7,i] = 2
+#   if j2Inter[num*3] == 'r':
+#     matrix[5,4:6,i] = 4
+#   if j2Inter[num*3] == 'g':
+#     matrix[5,4:6,i] = 2
+
+#   num = int(len(j1Inter)/4)
+#   if j1Inter[0] == 'r':
+#     matrix[:4,2,j] = 4
+#   if j1Inter[0] == 'g':
+#     matrix[:4,2,j] = 2
+#   if j1Inter[num] == 'r':
+#     matrix[4,4:6,j] = 4
+#   if j1Inter[num] == 'g':
+#     matrix[4,4:6,j] = 2
+#   if j1Inter[num*2] == 'r':
+#     matrix[6:,3,j] = 4
+#   if j1Inter[num*2] == 'g':
+#     matrix[6:,3,j] = 2
+#   if j1Inter[num*3] == 'r':
+#     matrix[5,:2,j] = 4
+#   if j1Inter[num*3] == 'g':
+#     matrix[5,:2,j] = 2
+  
+#   for veh in traci.vehicle.getIDList():
+#     X,Y = simpleXY(traci.vehicle.getPosition(veh))
+#     matrix[9-Y,X,0] += 1
+#     relVel = traci.vehicle.getSpeed(veh)/traci.vehicle.getMaxSpeed(veh)
+#     matrix[9-Y,X,1] += relVel
+
+#   return matrix
+
+# while traci.vehicle.getIDCount() == 0:
+#   traci.simulationStep()
+#   step += 1
+# print('step:',step)
+# matrix = getMatrix('j1')
+# traci.simulationStep()  
+# step += 1
+
+# print(matrix)
+
+# print('step:',step)
+# matrix = getMatrix('j2')
+# traci.simulationStep()  
+# step += 1
+
+# traci.close()
+# print(matrix)
+# traci.start(sumoCmd)
+# print(traci.trafficlight.getRedYellowGreenState('j1'))
+# traci.close()

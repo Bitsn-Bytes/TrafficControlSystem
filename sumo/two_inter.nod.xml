@@ -1,0 +1,11 @@
+<nodes>
+	<node id="j1" x="-9.5" y="0.0" type="traffic_light" />
+	<node id="j2" x="9.5" y="0.0" type="traffic_light" />
+	
+	<node id="l" x="-23.5" y="0.0" type="priority" />
+	<node id="r" x="23.5" y="0.0" type="priority" />
+	<node id="ul" x="-9.5" y="23.0" type="priority" />
+	<node id="ur" x="9.5" y="23.0" type="priority" />
+	<node id="ll" x="-9.5" y="-23.0" type="priority" />
+	<node id="lr" x="9.5" y="-23.0" type="priority" />
+</nodes>
