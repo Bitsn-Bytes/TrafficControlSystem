@@ -1,0 +1,24 @@
+<edges>
+
+	<edge id="lin" from="l" to="j1" priority="2" numLanes="1" speed="10" />
+	<edge id="lout" from="j1" to="l" priority="1" numLanes="1" speed="10" />
+
+	<edge id="ulin" from="ul" to="j1" priority="2" numLanes="1" speed="10" />
+	<edge id="ulout" from="j1" to="ul" priority="1" numLanes="1" speed="10" />
+
+	<edge id="llin" from="ll" to="j1" priority="2" numLanes="1" speed="10" />
+	<edge id="llout" from="j1" to="ll" priority="1" numLanes="1" speed="10" />
+
+	<edge id="j12" from="j1" to="j2" priority="2" numLanes="1" speed="10" />
+	<edge id="j21" from="j2" to="j1" priority="1" numLanes="1" speed="10" />
+
+	<edge id="rin" from="r" to="j2" priority="2" numLanes="1" speed="10" />
+	<edge id="rout" from="j2" to="r" priority="1" numLanes="1" speed="10" />
+
+	<edge id="urin" from="ur" to="j2" priority="2" numLanes="1" speed="10" />
+	<edge id="urout" from="j2" to="ur" priority="1" numLanes="1" speed="10" />
+
+	<edge id="lrin" from="lr" to="j2" priority="2" numLanes="1" speed="10" />
+	<edge id="lrout" from="j2" to="lr" priority="1" numLanes="1" speed="10" />
+
+</edges>		
