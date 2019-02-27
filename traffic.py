@@ -10,6 +10,8 @@ sumoCmd = [sumoBinary, "-c", "sumo/two_inter.sumocfg"]
 
 import traci
 import traci.constants as tc
+from collections import deque
+import random
 
 # A=[NSG, EWG, NSLG, EWLG]
 
@@ -70,7 +72,7 @@ class Simulation:
 		else:
 			i = 3
 			j = 2 
-		  
+			
 		num = int(len(j2Inter)/4)
 		if j2Inter[0] == 'r':
 			matrix[:4,6,i] = 4
@@ -108,32 +110,32 @@ class Simulation:
 			matrix[5,:2,j] = 2
 
 		for veh in traci.vehicle.getIDList():
-			X,Y = simpleXY(traci.vehicle.getPosition(veh))
+			X,Y = self.simpleXY(traci.vehicle.getPosition(veh))
 			matrix[9-Y,X,0] += 1
 			relVel = traci.vehicle.getSpeed(veh)/traci.vehicle.getMaxSpeed(veh)
 			matrix[9-Y,X,1] += relVel
 
 		return matrix
 
-	def take_action(self, action):
-		for i in range(agent_size):
-			traffic_state = ''
-			for traffic_action in action[i]:
-				if traffic_action == 1:
-					traffic_state += 'GGGG'
-				else if traffic_action == 0:
-					traffic_state += 'RRRR'
-			traci.setRedYellowGreenState('j'+str(i+1), traffic_state)
+	def take_action(self, action, agent):
+		traffic_state = ''
+		for traffic_action in action:
+			if traffic_action == 1:
+				traffic_state += 'GGGG'
+			elif traffic_action == 0:
+				traffic_state += 'RRRR'
+		traci.trafficlight.setRedYellowGreenState(agent, traffic_state)
 		reward = 0	
 		N = 0
 		for veh in traci.vehicle.getIDList():
 			N += 1
 			reward += nu * (1 - np.power((traci.vehicle.getWaitingTime(veh)/acceptable_waiting_time),tau))
-		reward /= N
+		if N is not 0: 
+			reward /= N
 		return reward	
 
 	# def is_finished(self):
-	def simpleXY(p):
+	def simpleXY(self, p):
 		x,y = p
 		if x > 13.5:
 			x -= 0.5
@@ -255,15 +257,15 @@ class DQNetwork:
 			self.flatten = tf.layers.flatten(self.relu2)
 
 			self.fc = tf.layers.dense(inputs = self.relu2,
-									  units = 128, # CHECK
-									  activation = tf.nn.relu,
-									  kernel_initializer=tf.contrib.layers.xavier_initializer(),
-									  name="fc1") 
+										units = 128, # CHECK
+										activation = tf.nn.relu,
+										kernel_initializer=tf.contrib.layers.xavier_initializer(),
+										name="fc1") 
 
 			self.output = tf.layers.dense(inputs = self.fc, 
-										  kernel_initializer=tf.contrib.layers.xavier_initializer(),
-										  units = action_size, 
-										  activation=None)
+											kernel_initializer=tf.contrib.layers.xavier_initializer(),
+											units = action_size, 
+											activation=None)
 
 			self.Q = tf.reduce_sum(tf.multiply(self.output, self.actions), axis=1)
 
@@ -300,17 +302,17 @@ for j in range(agent_size):
 		if i == 0:
 			# First we need a state shape(state) = grid_rows*grid_cols*4
 			# to_do
-			state = simulation.get_state()
+			state = simulation.get_state('j'+str(j+1))
 
 		# Random action
 		action = random.choice(actions)
 
 		# Get the rewards
 		# to_do
-		reward = simulation.take_action(action)
+		reward = simulation.take_action(action, 'j'+str(j+1))
 
 		# Get the next state
-		next_state = simulation.get_state()        
+		next_state = simulation.get_state('j'+str(j+1))        
 		# Add experience to memory
 		memory_temp.add_experience((state, action, reward, next_state))
 
@@ -330,7 +332,7 @@ def predict_action(explore_start, explore_stop, decay_rate, decay_step, state, a
 
 	if (explore_probability > tradeoff):
 		# Make a random action (exploration)
-		action = random.choice(actions)
+		action = random.choice(actions.shape)
 		
 	else:
 		Qs = sess.run(DQNetwork.output, feed_dict = {DQNetwork.inputs_: state.reshape((1, *state.shape))})
@@ -339,6 +341,7 @@ def predict_action(explore_start, explore_stop, decay_rate, decay_step, state, a
 				
 	return action, explore_probability
 
+network = DQNetwork()
 
 
 with tf.Session() as sess:
@@ -347,15 +350,17 @@ with tf.Session() as sess:
 	decay_step = 0
 
 	# to do
-	simulation.init() 
+	# simulation.init() 
 	saver = tf.train.Saver()
 
 
 	for episode in range(agent_network_update): # 1500
 
 		for j in range(agent_size):
-			saver.restore(sess,"./models/model_"+i+".ckpt")
-				# Set step to 0
+			if episode is not 0:
+				saver.restore(sess,"./models/model_"+j+".ckpt")
+			
+			# Set step to 0
 			step = 0
 
 				 # Initialize the rewards of the episode
@@ -363,7 +368,7 @@ with tf.Session() as sess:
 
 			# Make a new episode and observe the first state
 			# simulation.new_episode()
-			state = simulation.get_state()
+			state = simulation.get_state('j'+str(j+1))
 
 			while step < max_steps: #450
 				step += 1
@@ -375,20 +380,21 @@ with tf.Session() as sess:
 				action = np.zeros((agent_size,action_size))
 
 				for i in range(agent_size):
-					saver.restore(sess,"./models/model_"+i+".ckpt")
+					if episode is not 0:
+						saver.restore(sess,"./models/model_"+i+".ckpt")
 					# Predict the action to take and take it
 					action[i], explore_probability = predict_action(explore_start, explore_stop, decay_rate, decay_step, state, actions)
 
 				saver.restore(sess, "./models/model_"+j+".ckpt")
 				# Do the action
-				reward = simulation.take_action(action) # integrate all into one
+				reward = simulation.take_action(action, 'j'+str(j+1)) # integrate all into one
 
 				# Add the reward to total reward
 				episode_rewards.append(reward)
 
 
 				# Get the next state
-				next_state = simulation.get_state()           
+				next_state = simulation.get_state('j'+str(j+1))           
 
 				# Add experience to memory
 				memory[i].add_experience((state, action, reward, next_state))
@@ -419,14 +425,14 @@ with tf.Session() as sess:
 
 					loss, _ = sess.run([DQNetwork.loss, DQNetwork.optimizer],
 									feed_dict={DQNetwork.inputs_: states_mb,
-											   DQNetwork.target_Q: targets_mb,
-											   DQNetwork.actions_: actions_mb})
+												 DQNetwork.target_Q: targets_mb,
+												 DQNetwork.actions_: actions_mb})
 
 			total_reward = np.sum(episode_rewards)
 			print('Episode: {}'.format(episode),    
-					  'Total reward: {}'.format(total_reward),
-					  'Training loss: {:.4f}'.format(loss),
-					  'Explore P: {:.4f}'.format(explore_probability))
+						'Total reward: {}'.format(total_reward),
+						'Training loss: {:.4f}'.format(loss),
+						'Explore P: {:.4f}'.format(explore_probability))
 
 
-		save_path = saver.save(sess, "./models/model_"+j+".ckpt")
+			save_path = saver.save(sess, "./models/model_"+j+".ckpt")
