@@ -39,7 +39,7 @@ memory_size= 3000
 learning_rate=0.0001
 
 explore_start= 1.0
-explore_end = 0.01
+explore_stop = 0.01
 decay_rate = 5e-5
 
 # assumed
@@ -55,6 +55,7 @@ class Simulation:
 	# Start the simulation
 	def __init__(self):
 		traci.start(sumoCmd)
+		traci.simulationStep()
 
 	def __del__(self):
 		traci.close()
@@ -66,6 +67,7 @@ class Simulation:
 		matrix = np.zeros([10,10,4])  
 		j1Inter = traci.trafficlight.getRedYellowGreenState('j1').lower()
 		j2Inter = traci.trafficlight.getRedYellowGreenState('j2').lower()
+				
 		if junction == 'j1':
 			i = 2
 			j = 3
@@ -360,7 +362,7 @@ with tf.Session() as sess:
 
 		for j in range(agent_size):
 			if episode is not 0:
-				saver.restore(sess,"./models/model_"+j+".ckpt")
+				saver.restore(sess,"./models/model_"+str(j)+".ckpt")
 			
 			# Set step to 0
 			step = 0
@@ -383,13 +385,15 @@ with tf.Session() as sess:
 
 				for i in range(agent_size):
 					if episode is not 0:
-						saver.restore(sess,"./models/model_"+i+".ckpt")
+						saver.restore(sess,"./models/model_"+str(i)+".ckpt")
 					# Predict the action to take and take it
 					action[i], explore_probability = predict_action(explore_start, explore_stop, decay_rate, decay_step, state, actions)
 
-				saver.restore(sess, "./models/model_"+j+".ckpt")
+				if episode is not 0:
+					saver.restore(sess, "./models/model_"+str(j)+".ckpt")
+				
 				# Do the action
-				reward = simulation.take_action(action, 'j'+str(j+1)) # integrate all into one
+				reward = simulation.take_action(action[j], 'j'+str(j+1)) # integrate all into one
 
 				# Add the reward to total reward
 				episode_rewards.append(reward)
@@ -437,4 +441,4 @@ with tf.Session() as sess:
 						'Explore P: {:.4f}'.format(explore_probability))
 
 
-			save_path = saver.save(sess, "./models/model_"+j+".ckpt")
+			save_path = saver.save(sess, "./models/model_"+str(j)+".ckpt")
