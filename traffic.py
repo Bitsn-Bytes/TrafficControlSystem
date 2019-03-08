@@ -1,5 +1,5 @@
 import tensorflow as tf 
-import numpy as np 
+import numpy as np
 import os, sys
 from time import sleep
 tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
@@ -274,7 +274,10 @@ class DQNetwork:
 			self.optimizer = tf.train.RMSPropOptimizer(self.learning_rate).minimize(self.loss)
 
 
- 
+tf.reset_default_graph()
+DQNetwork = DQNetwork(state_size, action_size, learning_rate)
+
+
 class ReplayMemory():
 	def __init__(self, max_size):
 		self.buffer = deque(maxlen = max_size)
