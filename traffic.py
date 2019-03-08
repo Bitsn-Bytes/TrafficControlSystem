@@ -188,7 +188,7 @@ class DQNetwork:
 											 kernel_size = [3,3],
 											 padding = "SAME",
 											 kernel_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
-											 name = "conv1")
+											 name = "conv1_1")
 			
 			self.conv1_1_batchnorm = tf.layers.batch_normalization(self.conv1_1,
 																	training = True,
@@ -203,14 +203,14 @@ class DQNetwork:
 											 kernel_size = [3,3],
 											 padding = "SAME",
 											 kernel_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
-											 name = "conv1")
+											 name = "conv1_2")
 			
 			self.conv1_2_batchnorm = tf.layers.batch_normalization(self.conv1_2,
 																	training = True,
 																	epsilon = 1e-5,
-																	name = 'batch_norm1')
+																	name = 'batch_norm2')
 				
-			self.input2 = tf.math.add(self.conv,self.conv1_2_batchnorm,name='add1')
+			self.input2 = tf.add(self.conv,self.conv1_2_batchnorm,name='add1')
 
 			"""
 			Second convnet: 
@@ -224,12 +224,12 @@ class DQNetwork:
 										 kernel_size = [3,3],
 										 padding = "SAME",
 										 kernel_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
-										 name = "conv1")
+										 name = "conv2_1")
 			
 			self.conv2_1_batchnorm = tf.layers.batch_normalization(self.conv2_1,
 																	training = True,
 																	epsilon = 1e-5,
-																	name = 'batch_norm1')
+																	name = 'batch_norm3')
 			
 			self.conv2_1_out = tf.nn.relu(self.conv2_1_batchnorm, name="conv1_out")
 		
@@ -238,14 +238,14 @@ class DQNetwork:
 											 kernel_size = [3,3],
 											 padding = "SAME",
 											 kernel_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
-											 name = "conv1")
+											 name = "conv2_2")
 			
 			self.conv2_2_batchnorm = tf.layers.batch_normalization(self.conv2_2,
 																	training = True,
 																	epsilon = 1e-5,
-																	name = 'batch_norm1')
+																	name = 'batch_norm4')
 				
-			self.input3 = tf.math.add(self.relu1,self.conv2_2_batchnorm,name='add2')
+			self.input3 = tf.add(self.relu1,self.conv2_2_batchnorm,name='add2')
 
 			"""
 			Final output
