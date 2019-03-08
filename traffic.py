@@ -20,7 +20,7 @@ grid_rows= 10
 grid_cols = 10
 action_size = 4
 agent_size = 2
-acceptable_waiting_time = 180
+acceptable_waiting_time = 20
 nu = 0.15
 tau = 2
 
@@ -47,7 +47,7 @@ gamma = 0.9
 training = False
 pretrain_length = batch_size
 target_network_update = 150
-agent_network_update = 1500
+agent_network_update = 15
 
 agent_size = 2
 
@@ -126,15 +126,19 @@ class Simulation:
 				traffic_state += 'GGGG'
 			elif traffic_action == 0:
 				traffic_state += 'RRRR'
+		print(traffic_state)		
 		traci.trafficlight.setRedYellowGreenState(agent, traffic_state)
 		reward = 0	
 		N = 0
+		wt = 0
 		for veh in traci.vehicle.getIDList():
 			N += 1
 			reward += nu * (1 - np.power((traci.vehicle.getWaitingTime(veh)/acceptable_waiting_time),tau))
+			wt += (traci.vehicle.getWaitingTime(veh))
 		if N is not 0: 
 			reward /= N
-		return reward	
+		# print(wt)
+		return reward
 
 	# def is_finished(self):
 	def simpleXY(self, p):
@@ -341,7 +345,6 @@ def predict_action(explore_start, explore_stop, decay_rate, decay_step, state, a
 		
 	else:
 		Qs = sess.run(DQNetwork.output, feed_dict = {DQNetwork.inputs: state.reshape((1, *state.shape))})
-		print(Qs)
 		choice = np.argmax(Qs)
 		action = actions[int(choice)]
 				
@@ -395,8 +398,9 @@ with tf.Session() as sess:
 				if episode is not 0:
 					saver.restore(sess, "./models/model_"+str(j)+".ckpt")
 				
-				# Do the action
-				reward = simulation.take_action(action[j], 'j'+str(j+1)) # integrate all into one
+				if step % 10 == 0:
+					# Do the action
+					reward = simulation.take_action(action[j], 'j'+str(j+1)) # integrate all into one
 
 				# Add the reward to total reward
 				episode_rewards.append(reward)
@@ -406,7 +410,7 @@ with tf.Session() as sess:
 				next_state = simulation.get_state('j'+str(j+1))           
 
 				# Add experience to memory
-				memory[i].add_experience((state, action, reward, next_state))
+				memory[j].add_experience((state, action[j], reward, next_state))
 
 				# st+1 is now our current state
 				state = next_state
@@ -414,7 +418,7 @@ with tf.Session() as sess:
 				if(step % target_network_update == 0):
 					### LEARNING PART 
 					# Obtain random mini-batch from memory
-					batch = memory[i].sample(batch_size)
+					batch = memory[j].sample(batch_size)
 					states_mb = np.array([each[0] for each in batch], ndmin=3) 
 					actions_mb = np.array([each[1] for each in batch])
 					rewards_mb = np.array([each[2] for each in batch]) 
