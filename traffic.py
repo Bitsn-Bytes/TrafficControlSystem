@@ -344,7 +344,6 @@ def predict_action(explore_start, explore_stop, decay_rate, decay_step, state, a
 				
 	return action, explore_probability
 
-network = DQNetwork()
 
 
 with tf.Session() as sess:
