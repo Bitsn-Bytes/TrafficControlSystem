@@ -258,7 +258,7 @@ class DQNetwork:
 
 			self.flatten = tf.layers.flatten(self.relu2)
 
-			self.fc = tf.layers.dense(inputs = self.relu2,
+			self.fc = tf.layers.dense(inputs = self.flatten,
 										units = 128, # CHECK
 										activation = tf.nn.relu,
 										kernel_initializer=tf.contrib.layers.xavier_initializer(),
@@ -337,10 +337,11 @@ def predict_action(explore_start, explore_stop, decay_rate, decay_step, state, a
 
 	if (explore_probability > tradeoff):
 		# Make a random action (exploration)
-		action = random.choice(actions.shape)
+		action = random.choice(actions)
 		
 	else:
-		Qs = sess.run(DQNetwork.output, feed_dict = {DQNetwork.inputs_: state.reshape((1, *state.shape))})
+		Qs = sess.run(DQNetwork.output, feed_dict = {DQNetwork.inputs: state.reshape((1, *state.shape))})
+		print(Qs)
 		choice = np.argmax(Qs)
 		action = actions[int(choice)]
 				
@@ -350,7 +351,9 @@ def predict_action(explore_start, explore_stop, decay_rate, decay_step, state, a
 
 with tf.Session() as sess:
 	# Initialize the variables
+	writer = tf.summary.FileWriter("output", sess.graph)
 	sess.run(tf.global_variables_initializer())
+	writer.close()
 	decay_step = 0
 
 	# to do
@@ -420,7 +423,7 @@ with tf.Session() as sess:
 					target_Qs_batch = []
 
 					# Get Q values for next_state 
-					Qs_next_state = sess.run(DQNetwork.output, feed_dict = {DQNetwork.inputs_: next_states_mb})
+					Qs_next_state = sess.run(DQNetwork.output, feed_dict = {DQNetwork.inputs: next_states_mb})
 
 					# Set Q_target = r if the episode ends at s+1, otherwise set Q_target = r + gamma*maxQ(s', a')
 					for i in range(0, len(batch)):
@@ -430,9 +433,9 @@ with tf.Session() as sess:
 					targets_mb = np.array([each for each in target_Qs_batch])
 
 					loss, _ = sess.run([DQNetwork.loss, DQNetwork.optimizer],
-									feed_dict={DQNetwork.inputs_: states_mb,
+									feed_dict={DQNetwork.inputs: states_mb,
 												 DQNetwork.target_Q: targets_mb,
-												 DQNetwork.actions_: actions_mb})
+												 DQNetwork.actions: actions_mb})
 
 			total_reward = np.sum(episode_rewards)
 			print('Episode: {}'.format(episode),    
