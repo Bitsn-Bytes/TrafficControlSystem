@@ -5,7 +5,7 @@ from time import sleep
 tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
 sys.path.append(tools)
 
-sumoBinary = "/usr/local/bin/sumo"
+sumoBinary = "/usr/bin/sumo"
 sumoCmd = [sumoBinary, "-c", "sumo/two_inter.sumocfg"]
 
 import traci
@@ -20,13 +20,12 @@ grid_rows= 10
 grid_cols = 10
 action_size = 4
 agent_size = 2
-acceptable_waiting_time = 100
+acceptable_waiting_time = 20
 nu = 0.15
-tau = 3
+tau = 2
 
 # creating our environment
 states = np.zeros((4, grid_rows, grid_cols))
-# actions 4x4 one hot vector matrix
 actions = np.eye(action_size)
 # [np.arange(action_size)]
 
@@ -48,7 +47,7 @@ gamma = 0.9
 training = False
 pretrain_length = batch_size
 target_network_update = 150
-agent_network_update = 1500
+agent_network_update = 15
 
 agent_size = 2
 
@@ -56,6 +55,7 @@ class Simulation:
 	# Start the simulation
 	def __init__(self):
 		traci.start(sumoCmd)
+		traci.simulationStep()
 
 	def __del__(self):
 		traci.close()
@@ -67,6 +67,7 @@ class Simulation:
 		matrix = np.zeros([10,10,4])  
 		j1Inter = traci.trafficlight.getRedYellowGreenState('j1').lower()
 		j2Inter = traci.trafficlight.getRedYellowGreenState('j2').lower()
+				
 		if junction == 'j1':
 			i = 2
 			j = 3
@@ -118,27 +119,26 @@ class Simulation:
 
 		return matrix
 
-	def take_action(self, action, agent, step):
-		if(step%3==0):
-			traffic_state = ''
-			for traffic_action in action:
-				if traffic_action == 1:
-					traffic_state += 'GGGG'
-				elif traffic_action == 0:
-					traffic_state += 'RRRR'
-			# print("traffic_state ",traffic_state)
-			traci.trafficlight.setRedYellowGreenState(agent, traffic_state)
+	def take_action(self, action, agent):
+		traffic_state = ''
+		for traffic_action in action:
+			if traffic_action == 1:
+				traffic_state += 'GGGG'
+			elif traffic_action == 0:
+				traffic_state += 'RRRR'
+		print(traffic_state)		
+		traci.trafficlight.setRedYellowGreenState(agent, traffic_state)
 		reward = 0	
 		N = 0
+		wt = 0
 		for veh in traci.vehicle.getIDList():
 			N += 1
-			print("wat: ", traci.vehicle.getWaitingTime(veh), "speed: ", traci.vehicle.getSpeed(veh))
 			reward += nu * (1 - np.power((traci.vehicle.getWaitingTime(veh)/acceptable_waiting_time),tau))
-			# print("reward for taking action: ", reward)
-		print("N ", N)
+			wt += (traci.vehicle.getWaitingTime(veh))
 		if N is not 0: 
 			reward /= N
-		return reward	
+		# print(wt)
+		return reward
 
 	# def is_finished(self):
 	def simpleXY(self, p):
@@ -214,9 +214,9 @@ class DQNetwork:
 			self.conv1_2_batchnorm = tf.layers.batch_normalization(self.conv1_2,
 																	training = True,
 																	epsilon = 1e-5,
-																	name = 'batch_norm1_2')
+																	name = 'batch_norm2')
 				
-			self.input2 = tf.math.add(self.conv,self.conv1_2_batchnorm,name='add1')
+			self.input2 = tf.add(self.conv,self.conv1_2_batchnorm,name='add1')
 
 			"""
 			Second convnet: 
@@ -235,7 +235,7 @@ class DQNetwork:
 			self.conv2_1_batchnorm = tf.layers.batch_normalization(self.conv2_1,
 																	training = True,
 																	epsilon = 1e-5,
-																	name = 'batch_norm2_1')
+																	name = 'batch_norm3')
 			
 			self.conv2_1_out = tf.nn.relu(self.conv2_1_batchnorm, name="conv1_out")
 		
@@ -249,9 +249,9 @@ class DQNetwork:
 			self.conv2_2_batchnorm = tf.layers.batch_normalization(self.conv2_2,
 																	training = True,
 																	epsilon = 1e-5,
-																	name = 'batch_norm2_2')
+																	name = 'batch_norm4')
 				
-			self.input3 = tf.math.add(self.relu1,self.conv2_2_batchnorm,name='add2')
+			self.input3 = tf.add(self.relu1,self.conv2_2_batchnorm,name='add2')
 
 			"""
 			Final output
@@ -260,7 +260,7 @@ class DQNetwork:
 			"""
 			self.relu2 = tf.nn.relu(self.input3, name="relu2")
 
-			self.flatten = tf.layers.flatten(self.relu2, name="flatten")
+			self.flatten = tf.layers.flatten(self.relu2)
 
 			self.fc = tf.layers.dense(inputs = self.flatten,
 										units = 128, # CHECK
@@ -271,11 +271,11 @@ class DQNetwork:
 			self.output = tf.layers.dense(inputs = self.fc, 
 											kernel_initializer=tf.contrib.layers.xavier_initializer(),
 											units = action_size, 
-											activation=None, name="output")
+											activation=None)
 
-			self.Q = tf.reduce_sum(tf.multiply(self.output, self.actions), axis=1, name="Q")
+			self.Q = tf.reduce_sum(tf.multiply(self.output, self.actions), axis=1)
 
-			self.loss = tf.reduce_mean(tf.square(self.target_Q - self.Q), name="loss")
+			self.loss = tf.reduce_mean(tf.square(self.target_Q - self.Q))
 			
 			self.optimizer = tf.train.RMSPropOptimizer(self.learning_rate).minimize(self.loss)
 
@@ -318,7 +318,7 @@ for j in range(agent_size):
 
 		# Get the rewards
 		# to_do
-		reward = simulation.take_action(action, 'j'+str(j+1), 0)
+		reward = simulation.take_action(action, 'j'+str(j+1))
 
 		# Get the next state
 		next_state = simulation.get_state('j'+str(j+1))        
@@ -345,8 +345,6 @@ def predict_action(explore_start, explore_stop, decay_rate, decay_step, state, a
 		
 	else:
 		Qs = sess.run(DQNetwork.output, feed_dict = {DQNetwork.inputs: state.reshape((1, *state.shape))})
-		# print("Qs ", Qs)
-		# print(Qs.shape)
 		choice = np.argmax(Qs)
 		action = actions[int(choice)]
 				
@@ -354,27 +352,12 @@ def predict_action(explore_start, explore_stop, decay_rate, decay_step, state, a
 
 
 
-
-
-# ## Losses
-# tf.summary.scalar("Loss", DQNetwork.loss)
-
-# write_op = tf.summary.merge_all()
-
-f1=open('output.txt', 'w')
-f1.close()
-
 with tf.Session() as sess:
-	# Setup TensorBoard Writer
-	writer = tf.summary.FileWriter("output", sess.graph)
-	writer.close()
-
 	# Initialize the variables
+	writer = tf.summary.FileWriter("output", sess.graph)
 	sess.run(tf.global_variables_initializer())
-
+	writer.close()
 	decay_step = 0
-
-
 
 	# to do
 	# simulation.init() 
@@ -414,13 +397,11 @@ with tf.Session() as sess:
 
 				if episode is not 0:
 					saver.restore(sess, "./models/model_"+str(j)+".ckpt")
+				
+				if step % 10 == 0:
+					# Do the action
+					reward = simulation.take_action(action[j], 'j'+str(j+1)) # integrate all into one
 
-				# Do the action
-				# print("ACTION ",j, " ", action[j], " step ", step)
-
-				reward = simulation.take_action(action[j] , 'j'+str(j+1), step) # integrate all into one
-
-				# print("reward ", reward)
 				# Add the reward to total reward
 				episode_rewards.append(reward)
 
@@ -460,22 +441,11 @@ with tf.Session() as sess:
 												 DQNetwork.target_Q: targets_mb,
 												 DQNetwork.actions: actions_mb})
 
-
 			total_reward = np.sum(episode_rewards)
-
-			print('\n Agent: {}'.format(j) , 'Episode: {}'.format(episode),    
+			print('Episode: {}'.format(episode),    
 						'Total reward: {}'.format(total_reward),
 						'Training loss: {:.4f}'.format(loss),
 						'Explore P: {:.4f}'.format(explore_probability))
-			print('\n Agent: {}'.format(j) , 'Episode: {}'.format(episode),    
-						'Total reward: {}'.format(total_reward),
-						'Training loss: {:.4f}'.format(loss),
-						'Explore P: {:.4f}'.format(explore_probability), file=open("output.txt", "a"))
-			
 
 
 			save_path = saver.save(sess, "./models/model_"+str(j)+".ckpt")
-
-
-
-
